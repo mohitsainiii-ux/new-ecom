@@ -1,62 +1,139 @@
 "use client";
 
 import { useEffect, useState } from "react";
-const apiRequest = async (path: string) => {
-  const response = await fetch(
-    `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8001"}${path}`,
-  );
+import { useRouter } from "next/navigation";
 
-  if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
-  }
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+}
 
-  return response.json();
-};
+export default function HomePage() {
+  const router = useRouter();
 
-export default function Home() {
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+  const [user, setUser] = useState<User | null>(null);
+  const [checking, setChecking] = useState(true);
 
   useEffect(() => {
-    const checkBackend = async () => {
-      try {
-        const data = await apiRequest("/health");
+    // Get token
+    const token = localStorage.getItem(
+      "access_token"
+    );
 
-        setMessage(data.message);
-      } catch (error) {
-        console.error(error);
-        setError("FastAPI backend is not connected");
-      } finally {
-        setLoading(false);
-      }
-    };
+    // Get user
+    const storedUser = localStorage.getItem(
+      "user"
+    );
 
-    checkBackend();
-  }, []);
+    // No token or user
+    if (!token || !storedUser) {
+      router.replace("/login");
+      return;
+    }
+
+    try {
+      const parsedUser: User =
+        JSON.parse(storedUser);
+
+      setUser(parsedUser);
+      setChecking(false);
+
+    } catch (error) {
+      console.error(
+        "User data error:",
+        error
+      );
+
+      // Remove invalid data
+      localStorage.removeItem(
+        "access_token"
+      );
+
+      localStorage.removeItem("user");
+
+      router.replace("/login");
+    }
+  }, [router]);
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem(
+      "access_token"
+    );
+
+    localStorage.removeItem("user");
+
+    router.replace("/login");
+  };
+
+  // While checking authentication
+  if (checking) {
+    return (
+      <main
+        style={{
+          padding: "40px",
+          textAlign: "center",
+        }}
+      >
+        <h2>
+          Checking authentication...
+        </h2>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen p-10">
-      <h1 className="text-4xl font-bold">
-        E-Commerce
+    <main
+      style={{
+        minHeight: "100vh",
+        padding: "50px",
+        textAlign: "center",
+      }}
+    >
+      <h1>
+        Welcome to EcomStore 🎉
       </h1>
 
-      {loading && (
-        <p className="mt-5">
-          Checking backend...
-        </p>
-      )}
+      {user && (
+        <div
+          style={{
+            marginTop: "30px",
+          }}
+        >
+          <h2>
+            Welcome, {user.name} 👋
+          </h2>
 
-      {message && (
-        <p className="mt-5 text-green-600">
-          Backend Connected: {message}
-        </p>
-      )}
+          <p>
+            Email: {user.email}
+          </p>
 
-      {error && (
-        <p className="mt-5 text-red-600">
-          {error}
-        </p>
+          <p>
+            Role: {user.role}
+          </p>
+
+          <p>
+            User ID: {user.id}
+          </p>
+
+          <button
+            onClick={handleLogout}
+            style={{
+              marginTop: "20px",
+              padding: "12px 25px",
+              border: "none",
+              borderRadius: "8px",
+              background: "#dc2626",
+              color: "white",
+              cursor: "pointer",
+              fontSize: "15px",
+            }}
+          >
+            Logout
+          </button>
+        </div>
       )}
     </main>
   );
