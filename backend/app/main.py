@@ -3,7 +3,17 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.routers import auth, products
 
-app = FastAPI()
+
+app = FastAPI(
+    title="EcomStore API",
+    description="E-commerce backend API",
+    version="1.0.0"
+)
+
+
+# =========================
+# CORS
+# =========================
 
 app.add_middleware(
     CORSMiddleware,
@@ -16,22 +26,43 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+# =========================
+# AUTH ROUTES
+# =========================
+
 app.include_router(
     auth.router,
-    prefix="/api/auth"
+    prefix="/api/auth",
+    tags=["Authentication"]
 )
+
+
+# =========================
+# PRODUCT ROUTES
+# =========================
 
 app.include_router(
     products.router,
-    prefix="/api/products"
+    prefix="/api/products",
+    tags=["Products"]
 )
 
+
+# =========================
+# ROOT
+# =========================
 
 @app.get("/")
 def root():
     return {
         "message": "EcomStore FastAPI is running"
     }
+
+
+# =========================
+# HEALTH CHECK
+# =========================
 
 @app.get("/health")
 def health():
